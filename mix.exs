@@ -28,6 +28,6 @@ defmodule LoggerFileBackend.Mixfile do
   end
 
   defp deps do
-    []
+    [{:poison, "~> 1.4.0"}]
   end
 end

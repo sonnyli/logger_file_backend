@@ -2,7 +2,7 @@ defmodule LoggerFileBackendTest do
   use ExUnit.Case, async: false
   require Logger
 
-  @backend {LoggerFileBackend, :test}
+  @backend {Logger.Backends.JSONFile, :test}
 
   # add the backend here instead of `config/test.exs` due to issue 2649
   Logger.add_backend @backend
@@ -33,13 +33,6 @@ defmodule LoggerFileBackendTest do
     assert log =~ "ß\x{0032}\x{0222}"
   end
 
-  test "can configure format" do
-    config format: "$message [$level]\n"
-
-    Logger.debug("hello")
-    assert log =~ "hello [debug]"
-  end
-
   test "can configure metadata" do
     config format: "$metadata$message\n", metadata: [:user_id]
 
@@ -61,17 +54,18 @@ defmodule LoggerFileBackendTest do
   end
 
   test "logs to file after old has been moved" do
-    config format: "$message\n"
-
     Logger.debug "foo"
-    Logger.debug "bar"
-    assert log == "foo\nbar\n"
+
+    json = Poison.decode! log
+
+    assert Dict.get(json, "msg") == "foo"
 
     {"", 0} = System.cmd("mv", [path, path <> ".1"])
 
-    Logger.debug "biz"
     Logger.debug "baz"
-    assert log == "biz\nbaz\n"
+
+    json = Poison.decode! log
+    assert Dict.get(json, "msg") == "baz"
   end
 
   defp path do
